@@ -29,7 +29,7 @@ testprog.c :
 
       printf("testing wrapped function puts : \n");
       dummy = puts("Call to puts");
-      printf("dummy = %d\n");
+      printf("dummy = %d\n", dummy);
       return 0;
     }
 
