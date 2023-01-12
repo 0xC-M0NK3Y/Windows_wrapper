@@ -17,8 +17,7 @@ wrapped.c :
 
 compile the wrapped.c as dll :
 
-    x86_64-w64-mingw32-gcc -c wrapped.c -o wrapped.o
-    x86_64-w64-mingw32-gcc -shared wrapped.o -o wrapped.dll
+    x86_64-w64-mingw32-gcc -shared wrapped.c -o wrapped.dll
 
 testprog.c : 
 
