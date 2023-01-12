@@ -8,7 +8,8 @@ Example:
 wrapped.c :
 
     #include <stdio.h>
-
+    
+    // wrapped function must start with wrap_, or any 5 caracteres before the real function name
     int wrap_puts(const char *s) {
       puts("WRAPPED PUTS");
       puts(s);
