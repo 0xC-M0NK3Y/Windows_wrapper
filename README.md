@@ -7,7 +7,7 @@ Example:
 
 wrapped.c :
 
-  #include <stdio.h>
+    #include <stdio.h>
 
     int wrap_puts(const char *s) {
       puts("WRAPPED PUTS");
