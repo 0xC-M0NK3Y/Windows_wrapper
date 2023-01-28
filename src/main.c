@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     dll_func_t *functions = NULL;
 
     if (argc != 3) {
-        printf("Usage: %s <wrapped_dll> <executable>\n");
+        printf("Usage: %s <wrapped_dll> <executable>\n", argv[0]);
         return 0;
     }
     /* Load the file in RAM as files */

@@ -2,14 +2,15 @@ NAME = wrapper.exe
 SRC = $(addprefix src/, main.c loader.c utils.c )
 OBJ = ${SRC:.c=.o}
 CC = x86_64-w64-mingw32-gcc
+CFLAGS = -Wall -Wextra -Werror
 
 all : ${NAME}
 
 ${NAME}: ${OBJ}
-	${CC} ${OBJ} -o ${NAME}
+	${CC} ${OBJ} ${CFLAGS} -o ${NAME}
 
 %.o: %.c
-	${CC} -c ${<} -o ${@} ${DEBUG}
+	${CC} -c ${<} -o ${@} ${CFLAGS}
 
 clean:
 	rm -rf ${OBJ}

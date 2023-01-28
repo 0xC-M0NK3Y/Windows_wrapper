@@ -44,12 +44,13 @@ static int parse_pe(pe_hdr_t hdr) {
 static int map_pe(void *pe, pe_hdr_t hdr, PE *ptr) {
 
     /* Fetching all variable needed here, more lisible code */
-    uintptr_t image_base = hdr.nt->OptionalHeader.ImageBase;
+    //uintptr_t image_base = hdr.nt->OptionalHeader.ImageBase;
     uint32_t size_of_image = hdr.nt->OptionalHeader.SizeOfImage;
     uint32_t size_of_headers = hdr.nt->OptionalHeader.SizeOfHeaders;
     uint16_t nb_sections = hdr.nt->FileHeader.NumberOfSections;
 
     /* Alloc the total image of pe */
+    // better to VirtualAlloc to image_base to avoid relocations, first parameter
     *ptr = VirtualAlloc((void *)NULL, size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
     if (*ptr == NULL)
         return -1;
