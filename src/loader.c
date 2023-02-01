@@ -6,7 +6,9 @@
 #include "structs.h"
 
 static uint32_t find_rva(uint32_t rva, PIMAGE_SECTION_HEADER section, uint16_t nb_of_section) {
-    /* Finding the Relative Virtual Address */
+    /* Finding the Relative Virtual Address from offset in file */
+    /* We actually don't need to call this function, only usefull in file state */
+    /* The pointer to raw data are equal to virtualaddess so it return only rva */
     for (int i = 0; i < nb_of_section; i++) {
         if (rva >= section[i].VirtualAddress && rva < section[i].VirtualAddress + section[i].Misc.VirtualSize) {
             return rva - section[i].VirtualAddress + section[i].PointerToRawData;
