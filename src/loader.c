@@ -135,7 +135,7 @@ static int load_imports(pe_hdr_t hdr, PE ptr) {
             continue;
         }
         /* Accessing the thunks with the RVA */
-        /* We have 2 thunks pointing to the same location, one thunk to view and one to modify */
+        /* We have 2 thunks not pointing to the same location, one thunk to view and one to modify */
         PIMAGE_THUNK_DATA64 view_thunk = ptr + find_rva(import->OriginalFirstThunk, hdr.section, hdr.nt->FileHeader.NumberOfSections);;
         PIMAGE_THUNK_DATA64 set_thunk = ptr + find_rva(import->FirstThunk, hdr.section, hdr.nt->FileHeader.NumberOfSections);
         /* Can happen we don't have view_thunk, not a probleme */
