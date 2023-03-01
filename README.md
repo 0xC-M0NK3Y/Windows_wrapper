@@ -6,7 +6,7 @@ Program to link functions to your wrapped function
 Example:
 
 wrapped.c :
-
+```c
     #include <stdio.h>
     
     // wrapped function must start with wrap_, or any 5 caracteres before the real function name
@@ -15,13 +15,13 @@ wrapped.c :
       puts(s);
       return 2626;
     }
-
+ ``` 
 compile the wrapped.c as dll :
-
-    x86_64-w64-mingw32-gcc -shared wrapped.c -o wrapped.dll
-
+```sh
+    $ x86_64-w64-mingw32-gcc -shared wrapped.c -o wrapped.dll
+```
 testprog.c : 
-
+```c
     #include <stdio.h>
 
     int main(void)
@@ -33,23 +33,17 @@ testprog.c :
       printf("dummy = %d\n", dummy);
       return 0;
     }
-
+```
 compile the testprog.c as executable :
-
-    x86_64-w64-mingw32-gcc -c testprog.c -o testprog.o
-    x86_64-w64-mingw32-gcc testprog.o -o testprog.exe
-
+```sh
+    $ x86_64-w64-mingw32-gcc -c testprog.c -o testprog.o
+    $ x86_64-w64-mingw32-gcc testprog.o -o testprog.exe
+```
 Then just compile the actual wrapper program :
-
-    make
-
+```sh
+    $ make
+```
 Finally launch the programme like this :
-
-    ./wrapper.exe wrapped.dll testprog.exe
-
-You'll see the results
-
-You can use this on every program and wrappe the function you want.
-
-Enjoy <3
-Please give it a heart. Thanks.
+```sh
+    $ ./wrapper.exe wrapped.dll testprog.exe
+```
