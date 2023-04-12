@@ -2,7 +2,7 @@ NAME = wrapper.exe
 SRC = $(addprefix src/, main.c loader.c utils.c )
 OBJ = ${SRC:.c=.o}
 CC = x86_64-w64-mingw32-gcc
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -D__DEBUG__
 
 all : ${NAME}
 

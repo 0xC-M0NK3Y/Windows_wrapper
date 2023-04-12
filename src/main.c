@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     }
     /* We now juste need to jump on the AddressOfEntryPoint of our executable */
     /* call the function to retrieve the entry point and jump on it (rax) */
-    get_exe_entry(exe);
-    __asm__("jmp %rax");
+    int (*exemain)(void) = (int (*)(void))get_exe_entry(exe);
+    exemain();
     return 0;
 }

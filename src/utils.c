@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "macro.h"
+
 void *copy_file_in_ram(char *filename) {
 
     FILE    *file;
@@ -9,7 +11,7 @@ void *copy_file_in_ram(char *filename) {
 
     file = fopen(filename, "rb");
     if (file == NULL) {
-        printf("Error: failed open wrapped_dll\n");
+        DEBUG_PRINTF("Error: failed open wrapped_dll\n");
         return NULL;
     }
 
@@ -17,8 +19,10 @@ void *copy_file_in_ram(char *filename) {
     size = ftell(file);
     rewind(file);
     ret = malloc(size);
-    if (ret == NULL)
+    if (ret == NULL) {
+        DEBUG_PRINTF("malloc failed\n");
         return NULL;
+    }
     fread(ret, 1, size, file);
 
     return ret;

@@ -4,6 +4,7 @@
 #include <windows.h>
 
 #include "structs.h"
+#include "macro.h"
 
 static uint32_t find_rva(uint32_t rva, PIMAGE_SECTION_HEADER section, uint16_t nb_of_section) {
     /* Finding the Relative Virtual Address from offset in file */
@@ -17,11 +18,12 @@ static uint32_t find_rva(uint32_t rva, PIMAGE_SECTION_HEADER section, uint16_t n
     return 0;
 }
 
+/*
 static uintptr_t find_section(pe_hdr_t hdr, PE ptr, char *name) {
 
     uint16_t nb_section = hdr.nt->FileHeader.NumberOfSections;
 
-    /* Finding the pointer to the section we are looking for */
+    // Finding the pointer to the section we are looking for 
     for (uint16_t i = 0; i < nb_section; i++) {
         if (memcmp(hdr.section[i].Name, name, strlen(name) + 1) == 0) {
             return (uintptr_t)(ptr + find_rva(hdr.section[i].VirtualAddress, hdr.section, nb_section));
@@ -29,6 +31,7 @@ static uintptr_t find_section(pe_hdr_t hdr, PE ptr, char *name) {
     }
     return 0;
 }
+*/
 
 static int parse_pe(pe_hdr_t hdr) {
     /* Verify DOS magic number */
@@ -46,14 +49,14 @@ static int parse_pe(pe_hdr_t hdr) {
 static int map_pe(void *pe, pe_hdr_t hdr, PE *ptr) {
 
     /* Fetching all variable needed here, more lisible code */
-    //uintptr_t image_base = hdr.nt->OptionalHeader.ImageBase;
+    uintptr_t image_base = hdr.nt->OptionalHeader.ImageBase;
     uint32_t size_of_image = hdr.nt->OptionalHeader.SizeOfImage;
     uint32_t size_of_headers = hdr.nt->OptionalHeader.SizeOfHeaders;
     uint16_t nb_sections = hdr.nt->FileHeader.NumberOfSections;
 
     /* Alloc the total image of pe */
     // better to VirtualAlloc to image_base to avoid relocations, first parameter
-    *ptr = VirtualAlloc((void *)NULL, size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    *ptr = VirtualAlloc((void *)image_base, size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
     if (*ptr == NULL)
         return -1;
 
@@ -129,8 +132,9 @@ static int load_imports(pe_hdr_t hdr, PE ptr) {
             continue;
         }
         /* Loading the dll needed */
-        HMODULE module = LoadLibraryExA(name, NULL, 0);
+        HMODULE module = LoadLibraryA(name);
         if (module == NULL) {
+            DEBUG_PRINTF("LoadLibraryA failed on %s : %ld\n", name, GetLastError());
             import++;
             continue;
         }
@@ -148,6 +152,7 @@ static int load_imports(pe_hdr_t hdr, PE ptr) {
             if (IMAGE_SNAP_BY_ORDINAL64(set_thunk->u1.Ordinal)) {
 				uintptr_t address = (uintptr_t)GetProcAddress(module, ((LPCSTR)IMAGE_ORDINAL64(set_thunk->u1.Ordinal)));
                 if (address == 0) {
+                    DEBUG_PRINTF("GetProcAddress faild on %s : %ld\n", ((LPCSTR)IMAGE_ORDINAL64(set_thunk->u1.Ordinal)), GetLastError());
                     view_thunk++;
                     set_thunk++;
                     continue;
@@ -158,6 +163,7 @@ static int load_imports(pe_hdr_t hdr, PE ptr) {
                 PIMAGE_IMPORT_BY_NAME func = ptr + find_rva(view_thunk->u1.AddressOfData, hdr.section, hdr.nt->FileHeader.NumberOfSections);
                 uintptr_t address = (uintptr_t) GetProcAddress(module, func->Name);
                 if (address == 0) {
+                    DEBUG_PRINTF("GetProcAddress failed on %s : %ld\n", func->Name, GetLastError());
                     view_thunk++;
                     set_thunk++;
                     continue;
@@ -201,8 +207,9 @@ static int load_wrapped_imports(pe_hdr_t hdr, PE ptr, dll_func_t *wrapped_func) 
             continue;
         }
         /* Loading the dll needed */
-        HMODULE module = LoadLibraryExA(name, NULL, 0);
+        HMODULE module = LoadLibraryA(name);
         if (module == NULL) {
+            DEBUG_PRINTF("LoadLibraryA failed on %s : %ld\n", name, GetLastError());
             import++;
             continue;
         }
@@ -220,6 +227,7 @@ static int load_wrapped_imports(pe_hdr_t hdr, PE ptr, dll_func_t *wrapped_func) 
             if (IMAGE_SNAP_BY_ORDINAL64(set_thunk->u1.Ordinal)) {
 				uintptr_t address = (uintptr_t)GetProcAddress(module, ((LPCSTR)IMAGE_ORDINAL64(set_thunk->u1.Ordinal)));
                 if (address == 0) {
+                    DEBUG_PRINTF("GetProcAddress faild on %s : %ld\n", ((LPCSTR)IMAGE_ORDINAL64(set_thunk->u1.Ordinal)), GetLastError());
                     view_thunk++;
                     set_thunk++;
                     continue;
@@ -236,6 +244,7 @@ static int load_wrapped_imports(pe_hdr_t hdr, PE ptr, dll_func_t *wrapped_func) 
                 }
                 uintptr_t address = (uintptr_t) GetProcAddress(module, func->Name);
                 if (address == 0) {
+                    DEBUG_PRINTF("GetProcAddress failed on %s : %ld\n", func->Name, GetLastError());
                     view_thunk++;
                     set_thunk++;
                     continue;
@@ -263,8 +272,10 @@ static int load_exports(pe_hdr_t hdr, PE ptr, dll_func_t **func) {
     uint32_t *func_ptr = ptr + find_rva(export->AddressOfFunctions, hdr.section, hdr.nt->FileHeader.NumberOfSections);
 
 	*func = malloc(sizeof(dll_func_t) * (nb_of_functions + 1));
-	if (*func == NULL)
-		return -1;
+	if (*func == NULL) {
+		DEBUG_PRINTF("malloc failed\n");
+        return -1;
+    }
 	(*func)[nb_of_functions].name = NULL;
 	(*func)[nb_of_functions].func = NULL;
     /* Getting all the functions */
@@ -275,6 +286,31 @@ static int load_exports(pe_hdr_t hdr, PE ptr, dll_func_t **func) {
 	return 1;
 }
 
+
+static int protect_sections(const pe_hdr_t *hdr, PE ptr) {
+    /* Fetching all variable needed here, more lisible code */
+    uint16_t nb_sections = hdr->nt->FileHeader.NumberOfSections;
+    /* Map sections */
+    for (uint16_t i = 0; i < nb_sections; i++) {
+        uint32_t flag = 0;
+        if ((hdr->section[i].Characteristics&IMAGE_SCN_MEM_EXECUTE)&&(hdr->section[i].Characteristics&IMAGE_SCN_MEM_READ)&&(hdr->section[i].Characteristics&IMAGE_SCN_MEM_WRITE))
+            flag = PAGE_EXECUTE_READWRITE;
+        else if ((hdr->section[i].Characteristics&IMAGE_SCN_MEM_EXECUTE)&&(hdr->section[i].Characteristics&IMAGE_SCN_MEM_READ))
+            flag = PAGE_EXECUTE_READ;
+        else if ((hdr->section[i].Characteristics&IMAGE_SCN_MEM_EXECUTE)&&(hdr->section[i].Characteristics&IMAGE_SCN_MEM_WRITE))
+            flag = PAGE_EXECUTE_WRITECOPY; // Idk if its possible
+        else if ((hdr->section[i].Characteristics&IMAGE_SCN_MEM_WRITE)&&(hdr->section[i].Characteristics&IMAGE_SCN_MEM_READ))
+            flag = PAGE_READWRITE;
+        else if ((hdr->section[i].Characteristics&IMAGE_SCN_MEM_READ))
+            flag = PAGE_READONLY;
+        else
+            flag = PAGE_NOACCESS;
+        unsigned long dummy;
+        if (VirtualProtect(ptr + hdr->section[i].VirtualAddress, hdr->section[i].Misc.VirtualSize, flag, &dummy) == 0)
+            DEBUG_PRINTF("VirtualProtect failed on %s : %ld\n", hdr->section[i].Name, GetLastError());
+    }
+    return 1;
+}
 
 
 int dll_loader(void *pe, PE *ptr, dll_func_t **func) {
@@ -303,17 +339,18 @@ int dll_loader(void *pe, PE *ptr, dll_func_t **func) {
     hdr.section = IMAGE_FIRST_SECTION(hdr.nt);
     /* Fix the PointerToRawData not existing anymore, not at a file stade, we are at mapped stade */
     fixe_mapped_pe(hdr);
-    hdr.import = (PIMAGE_IMPORT_DESCRIPTOR)find_section(hdr, *ptr, ".idata");
-    hdr.export = (PIMAGE_EXPORT_DIRECTORY)find_section(hdr, *ptr, ".edata");
-    hdr.reloc = (PIMAGE_BASE_RELOCATION)find_section(hdr, *ptr, ".reloc");
+    hdr.import = *ptr + hdr.nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress; //(PIMAGE_IMPORT_DESCRIPTOR)find_section(hdr, *ptr, ".idata");
+    hdr.reloc = *ptr + hdr.nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+    hdr.export = *ptr + hdr.nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
     /* Do relocation if needed */
-    if (*ptr != (void *)hdr.nt->OptionalHeader.ImageBase && hdr.reloc)
+    if (*ptr != (void *)hdr.nt->OptionalHeader.ImageBase)
         do_relocations(*ptr, hdr);
     /* Load imports */
     load_imports(hdr, *ptr);
     /* Get the exports */
     if (load_exports(hdr, *ptr, func) < 0)
         return -__LINE__;
+    protect_sections(&hdr, *ptr);
     return 1;
 }
 
@@ -347,13 +384,13 @@ int exe_loader(void *pe, PE *ptr, dll_func_t *func) {
     hdr.section = IMAGE_FIRST_SECTION(hdr.nt);
     /* Fix the PointerToRawData not existing anymore, not at a file stade, we are at mapped stade */
     fixe_mapped_pe(hdr);
-    hdr.import = (PIMAGE_IMPORT_DESCRIPTOR)find_section(hdr, *ptr, ".idata");
-    hdr.export = (PIMAGE_EXPORT_DIRECTORY)find_section(hdr, *ptr, ".edata");
-    hdr.reloc = (PIMAGE_BASE_RELOCATION)find_section(hdr, *ptr, ".reloc");
+    hdr.import = *ptr + hdr.nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress; //(PIMAGE_IMPORT_DESCRIPTOR)find_section(hdr, *ptr, ".idata");
+    hdr.reloc = *ptr + hdr.nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
     /* Do relocation if needed */
-    if (*ptr != (void *)hdr.nt->OptionalHeader.ImageBase && hdr.reloc)
+    if (*ptr != (void *)hdr.nt->OptionalHeader.ImageBase)
         do_relocations(*ptr, hdr);
     /* Load imports */
     load_wrapped_imports(hdr, *ptr, func);
+    protect_sections(&hdr, *ptr);
     return 1;
 }
